@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { addCerdo, getCerdos, getCerdosNoSincronizados, deleteCerdo, isOnline } from './db/index';
-import { sincronizarCerdos } from './api/sync';
+import { addCerdo, getCerdos, getCerdosNoSincronizados, deleteCerdo, isOnline} from './db/index';
+import { sincronizarCerdos,eliminarCerdoEnBackend } from './api/sync';
 
 // Función para transformar la fecha al formato MySQL (YYYY-MM-DD HH:MM:SS)
 const transformarFecha = (fecha) => {
@@ -62,18 +62,33 @@ function App() {
   };
 
   const handleDeleteCerdo = async (id) => {
+    // Eliminar el cerdo de la base de datos local
     await deleteCerdo(id);
+  
+    // Si está en línea, eliminar el cerdo del backend
+    if (online) {
+      try {
+        await eliminarCerdoEnBackend(id);
+        console.log(`Cerdo con ID ${id} eliminado del backend.`);
+      } catch (error) {
+        console.error(`Error al eliminar el cerdo con ID ${id} del backend:`, error);
+      }
+    }
+  
+    // Actualizar la lista de cerdos
     setCerdos(await getCerdos());
   };
-
   const handleSync = async () => {
     try {
       setSincronizando(true);
-      // Obtener cerdos no sincronizados antes de intentar la sincronización
       const cerdosNoSincronizados = await getCerdosNoSincronizados();
       console.log('Cerdos no sincronizados:', cerdosNoSincronizados);
-
-      // Pasar los cerdos no sincronizados a la función de sincronización
+  
+      if (cerdosNoSincronizados.length === 0) {
+        console.log('No hay cerdos para sincronizar.');
+        return;
+      }
+  
       await sincronizarCerdos(cerdosNoSincronizados);
       setCerdos(await getCerdos()); // Actualizar lista después de sincronizar
     } catch (error) {
@@ -81,7 +96,9 @@ function App() {
     } finally {
       setSincronizando(false);
     }
+    
   };
+  
 
   return (
     <div>

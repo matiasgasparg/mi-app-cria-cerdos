@@ -16,22 +16,28 @@ export const sincronizarCerdos = async () => {
 
     for (const cerdo of cerdosNoSincronizados) {
       try {
-        // Validar cerdo antes de enviarlo
-        if (!cerdo.nombre || !cerdo.fecha) {
-          console.warn('Cerdo inválido, se omitirá:', cerdo);
-          continue;
-        }
-
-        // Enviar cerdo al servidor
-        console.log(`Sincronizando cerdo con ID ${cerdo.id}...`);
-        const response = await axios.post(`${API_URL}/cerdos`, cerdo);
-
-        if (response.status === 201) {
-          console.log(`Cerdo con ID ${cerdo.id} sincronizado con éxito.`);
-          // Marcar como sincronizado en IndexedDB
-          await marcarSincronizado(cerdo.id);
+        // Si el cerdo está marcado como eliminado, eliminarlo del backend
+        if (cerdo.eliminado) {
+          await eliminarCerdoEnBackend(cerdo.id);
+          console.log(`Cerdo con ID ${cerdo.id} eliminado del backend.`);
         } else {
-          console.warn(`Sincronización fallida para cerdo con ID ${cerdo.id}:`, response.statusText);
+          // Validar cerdo antes de enviarlo
+          if (!cerdo.nombre || !cerdo.fecha) {
+            console.warn('Cerdo inválido, se omitirá:', cerdo);
+            continue;
+          }
+
+          // Enviar cerdo al servidor
+          console.log(`Sincronizando cerdo con ID ${cerdo.id}...`);
+          const response = await axios.post(`${API_URL}/cerdos`, cerdo);
+
+          if (response.status === 201) {
+            console.log(`Cerdo con ID ${cerdo.id} sincronizado con éxito.`);
+            // Marcar como sincronizado en IndexedDB
+            await marcarSincronizado(cerdo.id);
+          } else {
+            console.warn(`Sincronización fallida para cerdo con ID ${cerdo.id}:`, response.statusText);
+          }
         }
       } catch (innerError) {
         console.error(`Error al sincronizar cerdo con ID ${cerdo.id}:`, innerError);
@@ -41,5 +47,20 @@ export const sincronizarCerdos = async () => {
     console.log('Sincronización completa.');
   } catch (error) {
     console.error('Error durante la sincronización:', error);
+  }
+};
+export const eliminarCerdoEnBackend = async (id) => {
+  try {
+    console.log(`Eliminando cerdo con ID ${id} del backend...`);
+    const response = await axios.delete(`${API_URL}/cerdos/${id}`);
+
+    if (response.status === 200) {
+      console.log(`Cerdo con ID ${id} eliminado del backend con éxito.`);
+    } else {
+      console.warn(`Eliminación fallida para cerdo con ID ${id}:`, response.statusText);
+    }
+  } catch (error) {
+    console.error(`Error al eliminar cerdo con ID ${id} del backend:`, error);
+    throw error;
   }
 };

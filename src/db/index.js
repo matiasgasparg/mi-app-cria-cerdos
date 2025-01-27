@@ -1,100 +1,114 @@
 import { openDB } from 'idb';
 
 export const isOnline = () => navigator.onLine; // Retorna true si hay conexión, false si no
-
-const dbPromise = openDB('cerdosDB', 3, {
-  upgrade(db, oldVersion) {
+const dbPromise = openDB('cerdosDB', 4, {
+  async upgrade(db, oldVersion) {
+    console.log(`Actualizando base de datos de la versión ${oldVersion} a la versión 4...`);
     if (oldVersion < 1) {
+      console.log('Creando objectStore "cerdos"...');
       const store = db.createObjectStore('cerdos', { keyPath: 'id', autoIncrement: true });
-      store.createIndex('sincronizado', 'sincronizado', { unique: false }); // Índice para sincronizado
+      store.createIndex('sincronizado', 'sincronizado', { unique: false });
+    }
+    if (oldVersion < 4) {
+      console.log('Migrando datos a la versión 4...');
+      const tx = db.transaction('cerdos', 'readwrite');
+      const store = tx.objectStore('cerdos');
+      const cerdos = await store.getAll();
+
+      for (const cerdo of cerdos) {
+        if (typeof cerdo.sincronizado === 'boolean') {
+          console.log(`Corrigiendo cerdo con ID ${cerdo.id}...`);
+          cerdo.sincronizado = cerdo.sincronizado ? 1 : 0; // Convertir a número
+          await store.put(cerdo);
+        }
+      }
+
+      await tx.done; // Esperar a que la transacción se complete
     }
   },
 });
-
 // Agregar un cerdo localmente
 export const addCerdo = async (cerdo) => {
   const db = await dbPromise;
   const tx = db.transaction('cerdos', 'readwrite');
-  const store = tx.store;
+  const store = tx.objectStore('cerdos');
 
-  // Asegurarse de que sincronizado es booleano
-  const cerdoConSincronizado = { ...cerdo, sincronizado: false };
+  // Usar 0 para no sincronizado y 1 para sincronizado
+  const cerdoConSincronizado = { ...cerdo, sincronizado: 0 };
   console.log('Agregando cerdo a IndexedDB:', cerdoConSincronizado);
 
-  // Asegurándonos de que todo esté dentro de la misma transacción
-  await store.add(cerdoConSincronizado); // Añadir cerdo a la base de datos
-  await tx.done; // Espera a que la transacción esté completamente lista
+  await store.add(cerdoConSincronizado);
+  await tx.done;
 };
-
 // Obtener todos los cerdos
 export const getCerdos = async () => {
   const db = await dbPromise;
-  return await db.getAll('cerdos');
+  const cerdos = await db.getAll('cerdos');
+  return cerdos.filter((cerdo) => !cerdo.eliminado); // Excluir cerdos marcados como eliminados
 };
 
-// Validar y corregir el campo 'sincronizado' en todos los cerdos
-const validarSincronizado = async () => {
-  const db = await dbPromise;
-  const tx = db.transaction('cerdos', 'readwrite');
-  const store = tx.store;
-  const allCerdos = await store.getAll();
-
-  allCerdos.forEach((cerdo) => {
-    if (typeof cerdo.sincronizado !== 'boolean') {
-      console.warn(`Corigiendo valor no booleano para 'sincronizado' en cerdo con ID ${cerdo.id}`);
-      cerdo.sincronizado = cerdo.sincronizado === 'false' || cerdo.sincronizado === 'true' ? cerdo.sincronizado === 'true' : false;
-      store.put(cerdo); // Corregir valor
-    }
-  });
-
-  await tx.done;
-};
-
-// Obtener cerdos no sincronizados usando el índice
 export const getCerdosNoSincronizados = async () => {
+  console.log('Iniciando getCerdosNoSincronizados...');
   const db = await dbPromise;
+  console.log('Base de datos obtenida:', db);
+
   const tx = db.transaction('cerdos', 'readonly');
-  const store = tx.store;
+  console.log('Transacción creada:', tx);
 
-  // Validar sincronización en la base de datos antes de consultar
-  await validarSincronizado();
+  const store = tx.objectStore('cerdos');
+  console.log('ObjectStore obtenido:', store);
 
-  // Asegurarnos de que estamos trabajando dentro de una transacción activa
-  const index = store.index('sincronizado');
-  const results = await index.getAll(IDBKeyRange.only(false));
+  try {
+    const index = store.index('sincronizado');
+    console.log('Índice obtenido:', index);
 
-  console.log('Cerdos no sincronizados:', results);
+    const results = await index.getAll(IDBKeyRange.only(0)); // Buscar cerdos no sincronizados (0)
+    console.log('Resultados obtenidos:', results);
 
-  // Aquí ya no usamos tx.done ya que se hace al final del proceso
-  return results;
+    return results;
+  } catch (error) {
+    console.error('Error al obtener cerdos no sincronizados:', error);
+    throw error;
+  } finally {
+    if (!tx.finished) {
+      console.log('Completando transacción...');
+      await tx.done;
+    }
+  }
 };
-
 // Marcar un cerdo como sincronizado
 export const marcarSincronizado = async (id) => {
   const db = await dbPromise;
   const tx = db.transaction('cerdos', 'readwrite');
-  const store = tx.store;
+  const store = tx.objectStore('cerdos');
   const cerdo = await store.get(id);
 
   if (cerdo) {
-    cerdo.sincronizado = true; // Asegurarse de que sea booleano
+    cerdo.sincronizado = 1; // Marcar como sincronizado
     await store.put(cerdo);
     console.log(`Cerdo con ID ${id} marcado como sincronizado.`);
   } else {
     console.warn(`Cerdo con ID ${id} no encontrado.`);
   }
 
-  await tx.done; // Asegurarnos de que la transacción se complete después de todo
+  await tx.done;
 };
 
 // Eliminar un cerdo
 export const deleteCerdo = async (id) => {
   const db = await dbPromise;
   const tx = db.transaction('cerdos', 'readwrite');
-  const store = tx.store;
+  const store = tx.objectStore('cerdos');
+  const cerdo = await store.get(id);
 
-  await store.delete(id);
-  console.log(`Cerdo con ID ${id} eliminado.`);
+  if (cerdo) {
+    // Marcar el cerdo como "pendiente de eliminación"
+    cerdo.eliminado = true;
+    await store.put(cerdo);
+    console.log(`Cerdo con ID ${id} marcado como pendiente de eliminación.`);
+  } else {
+    console.warn(`Cerdo con ID ${id} no encontrado.`);
+  }
 
-  await tx.done; // Espera a que la transacción esté completamente lista
+  await tx.done;
 };
