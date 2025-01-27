@@ -1,0 +1,8 @@
+src/
+├── components/        # Componentes reutilizables
+├── hooks/             # Custom hooks
+├── db/                # Lógica de IndexedDB
+├── api/               # Lógica de conexión con el backend
+├── utils/             # Funciones utilitarias (como transformarFecha)
+├── App.jsx            # Componente principal
+└── index.js           # Punto de entrada de la aplicación

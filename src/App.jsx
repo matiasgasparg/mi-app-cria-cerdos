@@ -1,104 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import { addCerdo, getCerdos, getCerdosNoSincronizados, deleteCerdo, isOnline} from './db/index';
-import { sincronizarCerdos,eliminarCerdoEnBackend } from './api/sync';
-
-// Función para transformar la fecha al formato MySQL (YYYY-MM-DD HH:MM:SS)
-const transformarFecha = (fecha) => {
-  const date = new Date(fecha);
-  return date.toISOString().slice(0, 19).replace('T', ' '); // "YYYY-MM-DD HH:MM:SS"
-};
+import React from 'react';
+import { useCerdos } from './hooks/useCerdos';
 
 function App() {
-  const [nombre, setNombre] = useState('');
-  const [cerdos, setCerdos] = useState([]);
-  const [online, setOnline] = useState(isOnline());
-  const [sincronizando, setSincronizando] = useState(false);
-
-  // Monitorear la conexión
-  useEffect(() => {
-    const updateOnlineStatus = () => setOnline(isOnline());
-
-    window.addEventListener('online', async () => {
-      updateOnlineStatus();
-      if (!sincronizando) await handleSync(); // Intentar sincronizar al volver en línea
-    });
-    window.addEventListener('offline', updateOnlineStatus);
-
-    return () => {
-      window.removeEventListener('online', updateOnlineStatus);
-      window.removeEventListener('offline', updateOnlineStatus);
-    };
-  }, [sincronizando]);
-
-  // Cargar y limpiar datos al iniciar
-  useEffect(() => {
-    const inicializar = async () => {
-      const data = await getCerdos();
-      console.log('Datos locales cargados:', data);
-
-      setCerdos(data);
-    };
-    inicializar();
-  }, []);
-
-  const handleAddCerdo = async () => {
-    if (!nombre.trim()) return;
-
-    // Transformar la fecha al formato compatible con MySQL
-    const fechaTransformada = transformarFecha(new Date().toISOString());
-
-    const nuevoCerdo = { nombre, fecha: fechaTransformada };
-
-    // Agregar cerdo a IndexedDB
-    await addCerdo(nuevoCerdo);
-    console.log('Cerdo agregado localmente:', nuevoCerdo);
-
-    // Actualizar lista de cerdos
-    setCerdos(await getCerdos());
-    setNombre('');
-
-    // Intentar sincronizar si está en línea
-    if (online) await handleSync();
-  };
-
-  const handleDeleteCerdo = async (id) => {
-    // Eliminar el cerdo de la base de datos local
-    await deleteCerdo(id);
-  
-    // Si está en línea, eliminar el cerdo del backend
-    if (online) {
-      try {
-        await eliminarCerdoEnBackend(id);
-        console.log(`Cerdo con ID ${id} eliminado del backend.`);
-      } catch (error) {
-        console.error(`Error al eliminar el cerdo con ID ${id} del backend:`, error);
-      }
-    }
-  
-    // Actualizar la lista de cerdos
-    setCerdos(await getCerdos());
-  };
-  const handleSync = async () => {
-    try {
-      setSincronizando(true);
-      const cerdosNoSincronizados = await getCerdosNoSincronizados();
-      console.log('Cerdos no sincronizados:', cerdosNoSincronizados);
-  
-      if (cerdosNoSincronizados.length === 0) {
-        console.log('No hay cerdos para sincronizar.');
-        return;
-      }
-  
-      await sincronizarCerdos(cerdosNoSincronizados);
-      setCerdos(await getCerdos()); // Actualizar lista después de sincronizar
-    } catch (error) {
-      console.error('Error al sincronizar:', error);
-    } finally {
-      setSincronizando(false);
-    }
-    
-  };
-  
+  const {
+    nombre,
+    setNombre,
+    cerdos,
+    online,
+    sincronizando,
+    handleAddCerdo,
+    handleDeleteCerdo,
+  } = useCerdos();
 
   return (
     <div>
