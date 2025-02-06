@@ -26,7 +26,26 @@ const dbPromise = openDB('cerdosDB', 4, {
       await tx.done; // Esperar a que la transacción se complete
     }
   },
-});
+});// En tu archivo index.js
+export const updateCerdo = async (id, nuevosDatos) => {
+  const db = await dbPromise;
+  const tx = db.transaction('cerdos', 'readwrite');
+  const store = tx.objectStore('cerdos');
+  const cerdo = await store.get(id);
+
+  if (cerdo) {
+    // Actualizar los datos del cerdo
+    cerdo.nombre = nuevosDatos.nombre || cerdo.nombre;
+    cerdo.fecha = nuevosDatos.fecha || cerdo.fecha;
+    cerdo.sincronizado = 0; // Marcar como no sincronizado
+    await store.put(cerdo);
+    console.log(`Cerdo con ID ${id} actualizado localmente.`);
+  } else {
+    console.warn(`Cerdo con ID ${id} no encontrado.`);
+  }
+
+  await tx.done;
+};
 // Agregar un cerdo localmente
 export const addCerdo = async (cerdo) => {
   const db = await dbPromise;

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { addCerdo, getCerdos, getCerdosNoSincronizados, deleteCerdo, isOnline } from '../db/index';
-import { sincronizarCerdos, eliminarCerdoEnBackend } from '../api/sync';
+import { addCerdo, getCerdos, getCerdosNoSincronizados, deleteCerdo, isOnline,updateCerdo} from '../db/index';
+import { sincronizarCerdos, eliminarCerdoEnBackend,actualizarCerdoEnBackend } from '../api/sync';
 import { transformarFecha } from '../utils/dateUtils';
 
 export const useCerdos = () => {
@@ -26,6 +26,26 @@ export const useCerdos = () => {
       window.removeEventListener('offline', updateOnlineStatus);
     };
   }, [sincronizando]);
+
+  const handleUpdateCerdo = async (id, nuevosDatos) => {
+    if (!nuevosDatos.nombre?.trim()) return;
+  
+    // Actualizar en la base de datos local
+    await updateCerdo(id, nuevosDatos);
+  
+    // Si está en línea, actualizar en el backend
+    if (online) {
+      try {
+        await actualizarCerdoEnBackend(id, nuevosDatos);
+        console.log(`Cerdo con ID ${id} actualizado en el backend.`);
+      } catch (error) {
+        console.error(`Error al actualizar el cerdo con ID ${id} en el backend:`, error);
+      }
+    }
+  
+    // Actualizar la lista de cerdos
+    setCerdos(await getCerdos());
+  };
   
   // Cargar datos al iniciar
   useEffect(() => {
@@ -90,5 +110,6 @@ export const useCerdos = () => {
     sincronizando,
     handleAddCerdo,
     handleDeleteCerdo,
+    handleUpdateCerdo
   };
 };

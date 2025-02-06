@@ -42,7 +42,22 @@ export const sincronizarCerdos = async () => {
     console.error('Error durante la sincronización:', error);
   }
 };
+// En tu archivo sync.js
+export const actualizarCerdoEnBackend = async (id, nuevosDatos) => {
+  try {
+    console.log(`Actualizando cerdo con ID ${id} en el backend...`);
+    const response = await axios.put(`${API_URL}/cerdos/${id}`, nuevosDatos);
 
+    if (response.status === 200) {
+      console.log(`Cerdo con ID ${id} actualizado en el backend con éxito.`);
+    } else {
+      console.warn(`Actualización fallida para cerdo con ID ${id}:`, response.statusText);
+    }
+  } catch (error) {
+    console.error(`Error al actualizar cerdo con ID ${id} en el backend:`, error);
+    throw error;
+  }
+};
 export const eliminarCerdoEnBackend = async (id) => {
   try {
     console.log(`Eliminando cerdo con ID ${id} del backend...`);
