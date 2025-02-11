@@ -3,6 +3,9 @@ import { useState, useRef } from 'react';
 import { CerdoProvider, useCerdoContext } from './context/CerdoContext';
 import CerdoForm from './CerdoForm';
 import CerdoItem from './CerdoItem';
+import { ToastContainer } from 'react-toastify';
+
+import 'react-toastify/dist/ReactToastify.css';
 
 const AppContent = () => {
   // Se extraen únicamente las variables y funciones que se usan
@@ -60,6 +63,16 @@ function App() {
   return (
     <CerdoProvider>
       <AppContent />
+      <ToastContainer 
+        position="top-center" 
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
     </CerdoProvider>
   );
 }

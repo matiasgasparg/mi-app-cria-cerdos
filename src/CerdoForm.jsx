@@ -122,8 +122,13 @@ const CerdoForm = ({ inputRef }) => {
         />
       </div>
       <button type="submit" disabled={sincronizando} className="btn-add">
-        {sincronizando ? 'Sincronizando...' : '➕ Agregar'}
-      </button>
+  {sincronizando ? (
+    // Puedes usar un ícono o componente de spinner
+    <span className="spinner">⏳</span>
+  ) : (
+    '➕ Agregar'
+  )}
+</button>
     </form>
   );
 };
