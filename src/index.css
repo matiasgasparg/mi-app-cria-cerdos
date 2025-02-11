@@ -1,12 +1,21 @@
 :root {
+  /* Variables de color para mantener la consistencia */
+  --primary-color: #ffcc00;  /* Amarillo para destacar */
+  --primary-hover: #ff9900;
+  --secondary-color: #222;   /* Texto en botones */
+  --background-dark: #222;   /* Fondo principal en modo oscuro */
+  --background-light: #f8f8f8; /* Fondo en modo claro */
+  --font-color: #fff;
+  --body-bg: #333;           /* Fondo del body para reducir reflejos */
+  --font-size-base: 16px;
+  
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
-
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
+  
+  color: var(--font-color);
+  background-color: var(--background-dark);
+  
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -14,55 +23,159 @@
 }
 
 a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
+  font-weight: 600;
+  color: var(--primary-color);
+  text-decoration: none;
 }
 a:hover {
-  color: #535bf2;
+  color: var(--primary-hover);
 }
 
 body {
   margin: 0;
   display: flex;
-  place-items: center;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   min-width: 320px;
   min-height: 100vh;
+  background-color: var(--body-bg);
+  font-size: var(--font-size-base);
 }
 
 h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+  font-size: 2.2em;
+  line-height: 1.2;
+  color: var(--primary-color);
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.6);
+  margin-bottom: 0.5em;
 }
 
+/* Estilos para botones */
 button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
+  border-radius: 12px;
+  border: 2px solid transparent;
+  padding: 0.8em 1.5em;
+  font-size: 1.2em;
+  font-weight: 600;
   font-family: inherit;
-  background-color: #1a1a1a;
+  background-color: var(--primary-color);
+  color: var(--secondary-color);
   cursor: pointer;
-  transition: border-color 0.25s;
+  transition: background-color 0.3s, border-color 0.3s;
+  margin: 0.3em 0;
 }
 button:hover {
-  border-color: #646cff;
+  background-color: var(--primary-hover);
+  border-color: #ff6600;
 }
 button:focus,
 button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+  outline: none;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
+/* Estilos para inputs y selects */
+input, select {
+  font-size: 1em;
+  padding: 0.75em;
+  margin: 0.5em 0;
+  border: 1px solid #555;
+  border-radius: 8px;
+  width: 100%;
+  box-sizing: border-box;
+  background-color: #444;
+  color: #fff;
+}
+input::placeholder {
+  color: #bbb;
+}
+
+/* Estilos para etiquetas */
+label {
+  display: block;
+  font-size: 0.9em;
+  margin-bottom: 0.25em;
+  text-align: left;
+}
+
+/* Contenedor de cada campo del formulario */
+.form-field {
+  margin-bottom: 1em;
+}
+
+/* Contenedor del formulario */
+.input-group {
+  width: 100%;
+  padding: 1em;
+  background-color: var(--body-bg);
+  border-radius: 10px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  margin-bottom: 1em;
+}
+
+/* Contenedor principal */
+#root {
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 1rem;
+  text-align: center;
+}
+
+/* Estilos para logo (si aplica) */
+.logo {
+  height: 4em;
+  padding: 1em;
+  transition: filter 300ms;
+}
+.logo:hover {
+  filter: drop-shadow(0 0 1.5em var(--primary-color));
+}
+
+/* Estilos para tarjetas y lista de cerdos */
+.card {
+  padding: 1.5em;
+  border-radius: 10px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  background-color: #444;
+  color: #fff;
+}
+
+.cerdo-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.cerdo-item {
+  padding: 0.75em;
+  border-bottom: 1px solid #555;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.cerdo-item span {
+  display: block;
+  margin: 0.2em 0;
+}
+
+.read-the-docs {
+  color: #bbb;
+}
+
+/* Media queries para pantallas pequeñas */
+@media (max-width: 480px) {
+  h1 {
+    font-size: 1.8em;
   }
   button {
-    background-color: #f9f9f9;
+    font-size: 1em;
+    padding: 0.7em 1.2em;
+  }
+  input, select {
+    font-size: 0.9em;
+    padding: 0.6em;
   }
 }
+

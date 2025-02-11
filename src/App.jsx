@@ -1,25 +1,22 @@
-import React, { useState } from 'react'; // <-- Agrega { useState }
-import { useCerdos } from './hooks/useCerdos';
+// App.jsx
+import { useState, useRef } from 'react';
+import { CerdoProvider, useCerdoContext } from './context/CerdoContext';
+import CerdoForm from './CerdoForm';
+import CerdoItem from './CerdoItem';
 
-// En tu archivo App.js
-function App() {
-  const {
-    nombre,
-    setNombre,
-    cerdos,
-    online,
-    sincronizando,
-    handleAddCerdo,
-    handleDeleteCerdo,
-    handleUpdateCerdo,
-  } = useCerdos();
+const AppContent = () => {
+  // Se extraen únicamente las variables y funciones que se usan
+  const { cerdos, online, handleDeleteCerdo, handleUpdateCerdo } = useCerdoContext();
 
+  // Estado local para edición
   const [editando, setEditando] = useState(null);
   const [nuevoNombre, setNuevoNombre] = useState('');
+  const inputRef = useRef(null);
 
   const iniciarEdicion = (id, nombreActual) => {
     setEditando(id);
     setNuevoNombre(nombreActual);
+    setTimeout(() => inputRef.current?.focus(), 100);
   };
 
   const cancelarEdicion = () => {
@@ -33,42 +30,38 @@ function App() {
   };
 
   return (
-    <div>
+    <div className="container">
       <h1>Gestión de Cerdos</h1>
-      <p>Estado de conexión: {online ? 'En línea' : 'Sin conexión'}</p>
-      <input
-        type="text"
-        placeholder="Nombre del cerdo"
-        value={nombre}
-        onChange={(e) => setNombre(e.target.value)}
-      />
-      <button onClick={handleAddCerdo} disabled={sincronizando}>
-        {sincronizando ? 'Sincronizando...' : 'Agregar Cerdo'}
-      </button>
-      <ul>
+      <p className={`status ${online ? 'online' : 'offline'}`}>
+        Estado: {online ? '🟢 En línea' : '🔴 Sin conexión'}
+      </p>
+      {/* El formulario obtiene sus datos desde el contexto */}
+      <CerdoForm inputRef={inputRef} />
+      <ul className="cerdo-list">
         {cerdos.map((cerdo) => (
-          <li key={cerdo.id}>
-            {editando === cerdo.id ? (
-              <>
-                <input
-                  type="text"
-                  value={nuevoNombre}
-                  onChange={(e) => setNuevoNombre(e.target.value)}
-                />
-                <button onClick={() => guardarEdicion(cerdo.id)}>Guardar</button>
-                <button onClick={cancelarEdicion}>Cancelar</button>
-              </>
-            ) : (
-              <>
-                {cerdo.nombre} - {new Date(cerdo.fecha).toLocaleString()}
-                <button onClick={() => iniciarEdicion(cerdo.id, cerdo.nombre)}>Editar</button>
-                <button onClick={() => handleDeleteCerdo(cerdo.id)}>Eliminar</button>
-              </>
-            )}
-          </li>
+          <CerdoItem
+            key={cerdo.id}
+            cerdo={cerdo}
+            editando={editando}
+            nuevoNombre={nuevoNombre}
+            setNuevoNombre={setNuevoNombre}
+            iniciarEdicion={iniciarEdicion}
+            guardarEdicion={guardarEdicion}
+            cancelarEdicion={cancelarEdicion}
+            handleDeleteCerdo={handleDeleteCerdo}
+          />
         ))}
       </ul>
     </div>
   );
+};
+
+function App() {
+  return (
+    <CerdoProvider>
+      <AppContent />
+    </CerdoProvider>
+  );
 }
+
 export default App;

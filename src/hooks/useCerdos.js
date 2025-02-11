@@ -1,10 +1,14 @@
 import { useState, useEffect } from 'react';
-import { addCerdo, getCerdos, getCerdosNoSincronizados, deleteCerdo, isOnline,updateCerdo} from '../db/index';
-import { sincronizarCerdos, eliminarCerdoEnBackend,actualizarCerdoEnBackend } from '../api/sync';
+import { addCerdo, getCerdos, getCerdosNoSincronizados, deleteCerdo, isOnline, updateCerdo } from '../db/index';
+import { sincronizarCerdos, eliminarCerdoEnBackend, actualizarCerdoEnBackend } from '../api/sync';
 import { transformarFecha } from '../utils/dateUtils';
 
 export const useCerdos = () => {
   const [nombre, setNombre] = useState('');
+  const [peso, setPeso] = useState('');
+  const [raza, setRaza] = useState('');
+  const [estadoSalud, setEstadoSalud] = useState('');
+  const [corralId, setCorralId] = useState('');
   const [cerdos, setCerdos] = useState([]);
   const [online, setOnline] = useState(isOnline());
   const [sincronizando, setSincronizando] = useState(false);
@@ -27,26 +31,6 @@ export const useCerdos = () => {
     };
   }, [sincronizando]);
 
-  const handleUpdateCerdo = async (id, nuevosDatos) => {
-    if (!nuevosDatos.nombre?.trim()) return;
-  
-    // Actualizar en la base de datos local
-    await updateCerdo(id, nuevosDatos);
-  
-    // Si está en línea, actualizar en el backend
-    if (online) {
-      try {
-        await actualizarCerdoEnBackend(id, nuevosDatos);
-        console.log(`Cerdo con ID ${id} actualizado en el backend.`);
-      } catch (error) {
-        console.error(`Error al actualizar el cerdo con ID ${id} en el backend:`, error);
-      }
-    }
-  
-    // Actualizar la lista de cerdos
-    setCerdos(await getCerdos());
-  };
-  
   // Cargar datos al iniciar
   useEffect(() => {
     const inicializar = async () => {
@@ -60,10 +44,14 @@ export const useCerdos = () => {
   const handleAddCerdo = async () => {
     if (!nombre.trim()) return;
 
-    const nuevoCerdo = { nombre, fecha: transformarFecha(new Date().toISOString()) };
+    const nuevoCerdo = { nombre, peso, raza, estado_salud: estadoSalud, corral_id: corralId, fecha: transformarFecha(new Date().toISOString()) };
     await addCerdo(nuevoCerdo);
     setCerdos(await getCerdos());
     setNombre('');
+    setPeso('');
+    setRaza('');
+    setEstadoSalud('');
+    setCorralId('');
 
     if (online) await handleSync();
   };
@@ -83,14 +71,33 @@ export const useCerdos = () => {
     setCerdos(await getCerdos());
   };
 
+  // Actualizar un cerdo
+  const handleUpdateCerdo = async (id, nuevosDatos) => {
+    if (!nuevosDatos.nombre?.trim()) return;
+  
+    // Actualizar en la base de datos local
+    await updateCerdo(id, nuevosDatos);
+  
+    // Si está en línea, actualizar en el backend
+    if (online) {
+      try {
+        await actualizarCerdoEnBackend(id, nuevosDatos);
+        console.log(`Cerdo con ID ${id} actualizado en el backend.`);
+      } catch (error) {
+        console.error(`Error al actualizar el cerdo con ID ${id} en el backend:`, error);
+      }
+    }
+  
+    // Actualizar la lista de cerdos
+    setCerdos(await getCerdos());
+  };
+
   // Sincronizar cerdos
   const handleSync = async () => {
     if (sincronizando) return; // Evitar múltiples ejecuciones simultáneas
-  
     try {
       setSincronizando(true);
       const cerdosNoSincronizados = await getCerdosNoSincronizados();
-  
       if (cerdosNoSincronizados.length > 0) {
         await sincronizarCerdos(cerdosNoSincronizados);
         setCerdos(await getCerdos());
@@ -105,6 +112,14 @@ export const useCerdos = () => {
   return {
     nombre,
     setNombre,
+    peso,
+    setPeso,
+    raza,
+    setRaza,
+    estadoSalud,
+    setEstadoSalud,
+    corralId,
+    setCorralId,
     cerdos,
     online,
     sincronizando,
